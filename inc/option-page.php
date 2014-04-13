@@ -1,15 +1,28 @@
 <?php
 
+// Add the nagging message on all admin page except the plugin's one
 function ozh_ta_notice_config() {
 	global $plugin_page;
-	if( $plugin_page == 'ozh_ta' )
-		return;
 
-	$url = menu_page_url( 'ozh_ta', false );
-	$message = 'Please configure <strong>Ozh\' Tweet Archiver</strong> <a href="'.$url.'">settings</a> now';
-	echo <<<NOTICE
-	<div class="error"><p>$message</p></div>
-NOTICE;
+    // on the plugin page
+	if( $plugin_page == 'ozh_ta' ) {
+        global $ozh_ta;
+        if(    isset( $ozh_ta['cons_key'] )
+            && isset( $ozh_ta['cons_secret'] )
+            && ( !isset( $ozh_ta['access_token'] ) || !$ozh_ta['access_token'] )
+        ) {
+            $message = 'Could not authenticate to Twitter. Check your consumer key and secret, then try again';
+        } else {
+            return;
+        }
+
+    // on all other admin pages
+    } else {
+        $url = menu_page_url( 'ozh_ta', false );
+        $message = 'Please configure <strong>Ozh\' Tweet Archiver</strong> <a href="'.$url.'">settings</a> now';
+    }
+
+	echo "<div class='error'><p>$message</p></div>";
 }
 
 // Draw the "automatic import" menu
@@ -18,7 +31,6 @@ function ozh_ta_do_page_scheduled() {
 	
 	if( isset( $_GET['action'] ) && $_GET['action'] == 'cancel_auto' ) {
 		check_admin_referer( 'ozh_ta-cancel_auto' );
-		ozh_ta_require( 'import.php' );
 		ozh_ta_schedule_next( 0 );
 		return;
 	}
@@ -67,7 +79,7 @@ function ozh_ta_do_page_manual() {
 		
 		// Import the goodness
 		ozh_ta_require( 'import.php' );
-		ozh_ta_schedule_next( 0 );
+        ozh_ta_schedule_next( 0 ); // clear any scheduling : it'll be rescheduled after all tweets have been imported
 		ozh_ta_get_tweets( true );
 		
 	}
@@ -94,20 +106,20 @@ function ozh_ta_do_page() {
 	
 	</style>
 	<?php
-	if( OZH_TA_DEBUG ) {
-		echo "<pre>";
-		print_r( $ozh_ta );
+	if( ozh_ta_is_debug() ) {
+		echo "<pre style='border:1px solid;padding:5px 15px;'>";
+		var_dump( $ozh_ta );
 		echo "</pre>";
 	}
 	
-	if( $ozh_ta['screen_name'] ) {
-		ozh_ta_do_page_manual();
-	}
-
 	if( wp_next_scheduled( 'ozh_ta_cron_import' ) && !ozh_ta_is_manually_archiving() ) {
 		ozh_ta_do_page_scheduled();
 	}
 	
+	if( ozh_ta_is_configured() ) {
+		ozh_ta_do_page_manual();
+	}
+
 	// Option page when not doing operation
 	if( !isset( $_GET['action'] ) or $_GET['action'] != 'import_all' ) { ?>
 	    <form action="options.php" method="post">
@@ -152,7 +164,19 @@ function ozh_ta_do_page() {
 		
 		})(jQuery);
 		</script>
-		<p class="submit"><input name="Submit" type="submit" value="Save Changes" /></p>
+        <?php
+        submit_button();
+        submit_button( 'Reset all settings', 'delete', 'delete_btn' );
+        ?>
+        <script>
+        (function($){
+        $('#delete_btn').click( function() {
+            if (!confirm('Really reset everything? No undo!')) {
+                return false;
+            }
+        });
+        })(jQuery);
+        </script>
 	    </form>
 	<?php } ?>
 
