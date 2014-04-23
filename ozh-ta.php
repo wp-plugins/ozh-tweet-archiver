@@ -3,7 +3,7 @@
 Plugin Name: Ozh' Tweet Archiver
 Plugin URI: http://planetozh.com/blog/my-projects/ozh-tweet-archiver-backup-twitter-with-wordpress/
 Description: Archive your tweets and import them as posts
-Version: 2.0
+Version: 2.0.1
 Author: Ozh
 Author URI: http://ozh.org/
 */
@@ -11,10 +11,17 @@ Author URI: http://ozh.org/
 /**
  * History
  * 1.0     initial release
+ *
  * 1.0.1   fix notice when no tweet found
+ *
  * 2.0     change to Twitter API v1.1, with help from @EHER
  *         allow embedding of images
  *         allow unwrapping t.co links
+ *         lots of tweaks
+ *
+ * 2.0.1   post formats, thanks to @chipbennett
+ *         cronjob should be smarters
+ *         tweaks here and there
  */
 
 /*
@@ -58,10 +65,8 @@ function ozh_ta_init() {
     if( $ozh_ta == false ) {
         $ozh_ta = ozh_ta_defaults();
     } else {
-        array_merge( ozh_ta_defaults(), $ozh_ta );
+        $ozh_ta = array_merge( ozh_ta_defaults(), $ozh_ta );
     }
-	
-	ozh_ta_debug( 'Plugin init' );
 }
 
 // Admin init
@@ -107,12 +112,11 @@ function ozh_ta_add_page() {
 function ozh_ta_defaults() {
 	global $wpdb;
 	
-	ozh_ta_debug( 'Loading defaults' );
-	
 	return array(
 		// plugin:
 		'refresh_interval'       => 60*60, // 60 minutes
 		'post_category'          => get_option('default_category'), // integer
+		'post_format'            => 'standard', // can be any of the values returned by get_post_format_slugs()
 		'post_author'            => $wpdb->get_var("SELECT ID FROM $wpdb->users ORDER BY ID LIMIT 1"), // first user id found
 		'link_hashtags'          => 'local', // can be no/local/twitter
 		'add_hash_as_tags'       => 'yes', // can be yes/no
