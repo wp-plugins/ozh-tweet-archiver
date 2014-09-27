@@ -255,7 +255,7 @@ function ozh_ta_insert_tweets( $tweets ) {
         // Current tweet
 		$tid            = (string)$tweet->id_str;
 		$text           = ozh_ta_linkify_tweet( $tweet );
-		$date           = date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) );
+		$date           = date( 'Y-m-d H:i:s', strtotime( $tweet->created_at ) + 3600 * get_option('gmt_offset') );
 		$source         = $tweet->source;
         $has_hashtags   = count( $tweet->entities->hashtags ) > 0;
 		$reply_to_name  = $tweet->in_reply_to_screen_name;
@@ -292,8 +292,9 @@ function ozh_ta_insert_tweets( $tweets ) {
 			);
 			// Post format
 			if ( 'standard' != $ozh_ta['post_format'] ) {
-				$post['post_format'] = 'post-format-' . $ozh_ta['post_format'];
+				$post['tax_input'] = array( 'post_format' => array( 'post-format-' . $ozh_ta['post_format'] ) );
 			}
+
 			// Plugins: hack here
 			$post = apply_filters( 'ozh_ta_insert_tweets_post', $post ); 
 			
